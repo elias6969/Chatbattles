@@ -1,0 +1,35 @@
+# Build directory
+build/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+compile_commands.json
+.cache/
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# VSCode
+.vscode/
+
+# CLion
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+*.exe
+
+# Compiled objects
+*.o
+*.obj
+*.so
+*.dll
+*.a
+*.lib
