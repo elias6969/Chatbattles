@@ -1,7 +1,9 @@
 #include "core/Application.h"
+#include "gamecore/BouncingBall.h"
 #include "raylib.h"
 #include "tools/EngineConfig.h"
 #include <iostream>
+#include <memory>
 
 #pragma region imgui
 #include "imgui.h"
@@ -17,6 +19,9 @@ void Application::Init() {
   InitWindow(EngineConfig::WindowWidth, EngineConfig::WindowHeight, "ChatBattle");
 
   SetupImGui();
+
+  player = std::make_unique<BouncingBall>();
+  player->Init();
 }
 
 void Application::SetupImGui() {
@@ -79,19 +84,20 @@ void Application::Shutdown() { CloseWindow(); }
 void Application::Update() {}
 
 void Application::Render() {
+  EngineConfig::dt = GetFrameTime();
+
+  player->Update();
   BeginDrawing();
   ClearBackground(GRAY);
   EngineConfig::UpdateWindowSize();
 
+  player->Draw();
   guirenderinit();
 
   ImGui::SetNextWindowBgAlpha(0.0f);
-  ImGui::Begin("Test");
-
-  ImGui::Text("Hello");
-  ImGui::Button("Button");
-  ImGui::Button("Button2");
-
+  ImGui::Begin("Config");
+  ImGui::Text("Ball velocity: %f", static_cast<float>(player->ball.velocity.x));
+  ImGui::Text("Ball velocity: %f", static_cast<float>(player->ball.velocity.y));
   ImGui::End();
 
   guirenderafter();

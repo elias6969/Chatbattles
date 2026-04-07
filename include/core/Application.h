@@ -1,7 +1,11 @@
 #pragma once
 
 #include "raylib.h"
+#include <memory>
 #include <vector>
+#include "gamecore/BouncingBall.h"
+
+
 
 class Application {
 public:
@@ -17,6 +21,7 @@ public:
   void guishutdown();
 
 private:
+  std::unique_ptr<BouncingBall> player;
   void Update();
   void Render();
 };
