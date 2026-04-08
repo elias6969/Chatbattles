@@ -11,6 +11,7 @@
 #include "rlImGui.h"
 #pragma endregion
 
+
 Application::Application() {}
 
 void Application::Init() {
@@ -22,6 +23,8 @@ void Application::Init() {
 
   player = std::make_unique<BouncingBall>();
   player->Init();
+  wsClient = std::make_unique<WebSocketClient>();
+  wsClient->Init("ws://127.0.0.1:8080");
 }
 
 void Application::SetupImGui() {
@@ -86,6 +89,7 @@ void Application::Update() {}
 void Application::Render() {
   EngineConfig::dt = GetFrameTime();
 
+  wsClient->Update(*player);
   player->Update();
   BeginDrawing();
   ClearBackground(GRAY);
@@ -114,6 +118,7 @@ void Application::Run() {
   }
 
   guishutdown();
+  wsClient->Shutdown();
   Shutdown();
 }
 

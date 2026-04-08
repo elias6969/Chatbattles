@@ -57,6 +57,11 @@ add_executable(RaylibEngine
     ${ENGINE_SOURCES}
 )
 
+add_subdirectory(external/IXWebSocket)
+
+add_subdirectory(external/json)
+target_link_libraries(RaylibEngine PRIVATE nlohmann_json::nlohmann_json)   
+
 target_include_directories(RaylibEngine PRIVATE
     include
     external
@@ -66,6 +71,7 @@ target_link_libraries(RaylibEngine PRIVATE
     raylib
     rlimgui
     imgui
+    ixwebsocket
 )
 
 # --------------------------------------------------

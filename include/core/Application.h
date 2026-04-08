@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "gamecore/BouncingBall.h"
+#include "network/WebSocketClient.h"
 
 
 
@@ -22,6 +23,7 @@ public:
 
 private:
   std::unique_ptr<BouncingBall> player;
+  std::unique_ptr<WebSocketClient> wsClient;
   void Update();
   void Render();
 };
