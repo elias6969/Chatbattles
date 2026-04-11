@@ -1,8 +1,6 @@
 #pragma once
 
 #include "raylib.h"
-#include <algorithm>
-#include <iostream>
 #include <memory>
 #include <string>
 
@@ -12,6 +10,10 @@ struct Ball {
   float radius;
   Color color;
   std::string username;
+
+  Texture2D pfpTexture;
+  bool hasPfp = false;
+  std::string userId;
 };
 
 class BouncingBall {
@@ -20,7 +22,10 @@ public:
   void Update();
   void Draw();
 
+  void SetTexture(Texture2D tex);
+
   Ball ball;
-  std::unique_ptr<Font> font;
+
 private:
+  std::unique_ptr<Font> font;
 };

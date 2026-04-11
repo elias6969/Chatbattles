@@ -1,11 +1,40 @@
 import { TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
 import { WebSocketServer } from 'ws';
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
 
-const TIKTOK_USERNAME = "irfanrifki123";
+const TIKTOK_USERNAME = "itscvsper";
+const PFP_DIR = "./pfp_cache";
+
+if (!fs.existsSync(PFP_DIR)) {
+  fs.mkdirSync(PFP_DIR);
+}
 
 const wss = new WebSocketServer({ port: 8080 });
-
 console.log("WS server running on ws://localhost:8080");
+
+wss.on('connection', () => {
+  console.log("C++ client connected");
+});
+
+const tiktok = new TikTokLiveConnection(TIKTOK_USERNAME, {
+  enableExtendedGiftInfo: false,
+  enableWebsocketUpgrade: true,
+  disableEulerFallbacks: true
+});
+
+async function connectTikTok() {
+  try {
+    await tiktok.connect();
+    console.log("Connected to TikTok");
+  } catch (err) {
+    console.log("TikTok connect failed, retrying...");
+    setTimeout(connectTikTok, 3000);
+  }
+}
+
+connectTikTok();
 
 const giftMap = {
   5655: "Rose",
@@ -15,79 +44,73 @@ const giftMap = {
   5760: "Galaxy",
   9875: "Shamrock",
   8913: "Rosa",
-  5879: "Donut"
+  5879: "Donut",
+  6064: "GG"
 };
 
-wss.on('connection', (ws) => {
-  console.log("C++ client connected");
-
-  ws.on('close', () => {
-    console.log("C++ client disconnected");
-  });
-});
-
-const tiktok = new TikTokLiveConnection(TIKTOK_USERNAME, {
-  enableExtendedGiftInfo: false,
-  enableWebsocketUpgrade: true,
-  disableEulerFallbacks: true
-});
-
-try {
-  await tiktok.connect();
-  console.log("Connected to TikTok");
-} catch (err) {
-  console.error("Failed to connect to TikTok:", err.message);
+function getUserName(data) {
+  return data?.user?.nickname || data?.user?.uniqueId || "unknown";
 }
 
-function getUserName(data) {
-  const user = data.user;
-
-  if (user) {
-    if (user.nickname && user.nickname !== "...") {
-      return user.nickname;
-    }
-
-    if (user.uniqueId) {
-      return user.uniqueId;
-    }
-
-    if (user.userId) {
-      return user.userId;
-    }
-  }
-
-  if (data.nickname && data.nickname !== "...") {
-    return data.nickname;
-  }
-
-  if (data.uniqueId) {
-    return data.uniqueId;
-  }
-
-  return "unknown";
+function getUserId(data) {
+  return data?.user?.userId || "unknown";
 }
 
 function getGiftName(data) {
   const id = data?.giftId;
 
-  if (id && giftMap[id]) {
-    return giftMap[id];
-  }
-
-  if (data?.gift?.name) {
-    return data.gift.name;
-  }
-
-  if (id) {
-    return `gift_${id}`;
-  }
+  if (id && giftMap[id]) return giftMap[id];
+  if (data?.gift?.name) return data.gift.name;
+  if (id) return `gift_${id}`;
 
   return "unknown_gift";
 }
 
-// -------------------------------
-// Broadcast helper
-// -------------------------------
+function getPfpUrl(data) {
+  const urls = data?.user?.profilePicture?.url;
+  if (!urls) return "";
+  const jpeg = urls.find(u => u.includes(".jpeg"));
+  return jpeg || urls[0];
+}
+
+async function downloadPfp(url, userId) {
+  if (!url || typeof url !== "string") return "";
+
+  const filePath = path.join(PFP_DIR, `${userId}.png`);
+
+  if (fs.existsSync(filePath)) {
+    return path.resolve(filePath);
+  }
+
+  try {
+    if (typeof fetch !== "function") {
+      return "";
+    }
+
+    const res = await fetch(url);
+    if (!res.ok) return "";
+
+    const buffer = await res.arrayBuffer();
+
+    await sharp(Buffer.from(buffer))
+      .png()
+      .toFile(filePath);
+
+    console.log("Saved PFP:", filePath);
+
+    return path.resolve(filePath);
+
+  } catch (err) {
+    console.log("Download error:", err.message);
+    return "";
+  }
+}
+
+function getLocalPfp(userId) {
+  const filePath = path.resolve(`${PFP_DIR}/${userId}.png`);
+  return fs.existsSync(filePath) ? filePath : "";
+}
+
 function broadcast(data) {
   const msg = JSON.stringify(data);
 
@@ -98,78 +121,84 @@ function broadcast(data) {
   });
 }
 
-// -------------------------------
-// TikTok Events
-// -------------------------------
-
-// 💬 Chat
 tiktok.on(WebcastEvent.CHAT, data => {
   const user = getUserName(data);
+  const userId = getUserId(data);
+  const message = String(data.comment || "");
+  const pfpUrl = getPfpUrl(data);
 
-  console.log("CHAT:", user, data.comment);
+  console.log("CHAT:", user, "->", message);
+
+  downloadPfp(pfpUrl, userId).catch(() => {});
 
   broadcast({
     type: "chat",
-    user: user,
-    message: data.comment
+    user,
+    userId,
+    message,
+    pfp: getLocalPfp(userId)
   });
 });
 
-// 🎁 Gift
 tiktok.on(WebcastEvent.GIFT, data => {
-  try {
-    // skip broken events
-    if (!data) return;
+  if (!data) return;
+  if (data.repeatEnd === false) return;
 
-    // optional: wait for combo end
-    if (data.repeatEnd === false) return;
+  const user = getUserName(data);
+  const userId = getUserId(data);
+  const giftName = getGiftName(data);
+  const amount = data.repeatCount || 1;
+  const pfpUrl = getPfpUrl(data);
 
-    const user = getUserName(data);
-    const giftName = getGiftName(data);
-    const amount = data.repeatCount || 1;
+  console.log("GIFT:", user, giftName, "x", amount);
 
-    console.log("GIFT:", user, giftName, "x", amount);
+  downloadPfp(pfpUrl, userId).catch(() => {});
 
-    broadcast({
-      type: "gift",
-      user: user,
-      gift: giftName,
-      amount: amount
-    });
-
-  } catch (err) {
-    console.log("Gift parse error (ignored):", err.message);
-  }
+  broadcast({
+    type: "gift",
+    user,
+    userId,
+    gift: giftName,
+    amount,
+    pfp: getLocalPfp(userId)
+  });
 });
 
-// 👋 Join
 tiktok.on(WebcastEvent.MEMBER, data => {
   const user = getUserName(data);
+  const userId = getUserId(data);
+  const pfpUrl = getPfpUrl(data);
 
   console.log("JOIN:", user);
 
+  downloadPfp(pfpUrl, userId).catch(() => {});
+
   broadcast({
     type: "join",
-    user: user
+    user,
+    userId,
+    pfp: getLocalPfp(userId)
   });
 });
 
-// ❤️ Likes
 tiktok.on(WebcastEvent.LIKE, data => {
   const user = getUserName(data);
+  const userId = getUserId(data);
+  const pfpUrl = getPfpUrl(data);
 
-  console.log("LIKE:", user, data.likeCount);
+  console.log("LIKE:", user, "count:", data.likeCount);
+
+  downloadPfp(pfpUrl, userId).catch(() => {});
 
   broadcast({
     type: "like",
-    user: user,
-    count: data.likeCount
+    user,
+    userId,
+    count: data.likeCount,
+    pfp: getLocalPfp(userId)
   });
 });
 
-// -------------------------------
-// Error handling
-// -------------------------------
 tiktok.on('error', err => {
   console.error("TikTok ERROR:", err);
 });

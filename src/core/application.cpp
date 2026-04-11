@@ -11,13 +11,13 @@
 #include "rlImGui.h"
 #pragma endregion
 
-
 Application::Application() {}
 
 void Application::Init() {
 
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-  InitWindow(EngineConfig::WindowWidth, EngineConfig::WindowHeight, "ChatBattle");
+  InitWindow(EngineConfig::WindowWidth, EngineConfig::WindowHeight,
+             "ChatBattle");
 
   SetupImGui();
 
@@ -25,6 +25,12 @@ void Application::Init() {
   player->Init();
   wsClient = std::make_unique<WebSocketClient>();
   wsClient->Init("ws://127.0.0.1:8080");
+
+  for (int i = 0; i < 1; i++) {
+    auto ball = std::make_unique<BouncingBall>();
+    ball->Init();
+    playerballs.push_back(std::move(ball));
+  }
 }
 
 void Application::SetupImGui() {
@@ -41,12 +47,8 @@ void Application::SetupImGui() {
 
   ImGuiStyle &style = ImGui::GetStyle();
   if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-    // style.WindowRounding = 0.0f;
     style.Colors[ImGuiCol_WindowBg].w = 0.5f;
-    // style.Colors[ImGuiCol_DockingEmptyBg].w = 0.f;
   }
-
-  // ImGui::GetStyle().Colors[ImGuiCol_Text] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 
 #pragma endregion
 }
@@ -88,14 +90,21 @@ void Application::Update() {}
 
 void Application::Render() {
   EngineConfig::dt = GetFrameTime();
+  wsClient->Update(playerballs);
+  // player->Update();
+  for (auto &ball : playerballs) {
+    ball->Update();
+  }
 
-  wsClient->Update(*player);
-  player->Update();
   BeginDrawing();
   ClearBackground(GRAY);
   EngineConfig::UpdateWindowSize();
 
-  player->Draw();
+  for (auto &ball : playerballs) {
+
+    ball->Draw();
+  }
+
   guirenderinit();
 
   ImGui::SetNextWindowBgAlpha(0.0f);

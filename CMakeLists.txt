@@ -56,11 +56,27 @@ target_include_directories(imgui PUBLIC
 add_executable(RaylibEngine
     ${ENGINE_SOURCES}
 )
-
+set(USE_TLS TRUE)
+set(IXWEBSOCKET_USE_TLS ON)
 add_subdirectory(external/IXWebSocket)
 
 add_subdirectory(external/json)
 target_link_libraries(RaylibEngine PRIVATE nlohmann_json::nlohmann_json)   
+
+find_package(CURL REQUIRED)
+target_link_libraries(RaylibEngine PRIVATE CURL::libcurl)
+
+target_link_libraries(RaylibEngine PRIVATE webp)
+
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(RaylibEngine
+    PRIVATE
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+add_definitions(-DIXWEBSOCKET_USE_TLS)
 
 target_include_directories(RaylibEngine PRIVATE
     include

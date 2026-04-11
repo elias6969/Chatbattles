@@ -11,7 +11,7 @@ class BouncingBall;
 class WebSocketClient {
 public:
     void Init(const std::string& url);
-    void Update(BouncingBall& ball);
+    void Update(std::vector<std::unique_ptr<BouncingBall>> &balls);
     void Shutdown();
 
 private:

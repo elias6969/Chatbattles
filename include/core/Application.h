@@ -22,6 +22,7 @@ public:
   void guishutdown();
 
 private:
+  std::vector<std::unique_ptr<BouncingBall>> playerballs;
   std::unique_ptr<BouncingBall> player;
   std::unique_ptr<WebSocketClient> wsClient;
   void Update();

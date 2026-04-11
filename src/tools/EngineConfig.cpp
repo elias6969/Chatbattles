@@ -26,7 +26,7 @@ std::string EngineConfig::ModelDirectory =
 
 int EngineConfig::WindowWidth = 800;
 int EngineConfig::WindowHeight = 600;
-float EngineConfig::dt = GetFrameTime();
+float EngineConfig::dt = 0.0f;
 
 void EngineConfig::UpdateWindowSize() {
   WindowWidth = GetRenderWidth();
