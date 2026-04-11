@@ -18,6 +18,7 @@ public:
   static int WindowHeight;
   static void UpdateWindowSize();
   static void PollWindowResize();
+  static float dt;
 };
 
 #endif // ENGINE_CONFIG_H
