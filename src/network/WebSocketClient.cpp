@@ -1,15 +1,12 @@
 #include "network/WebSocketClient.h"
 #include "gamecore/BouncingBall.h"
+#include "tools/EngineConfig.h"
 
 #include <iostream>
-#include <memory>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
-#include <vector>
 
 using json = nlohmann::json;
-
-// cache textures to avoid reloading same image
 static std::unordered_map<std::string, Texture2D> textureCache;
 
 void WebSocketClient::Init(const std::string &url) {
@@ -36,7 +33,7 @@ static void ApplyPfp(BouncingBall &ball, const std::string &pfp) {
   }
 
   Image img = LoadImage(pfp.c_str());
-  if (img.data == nullptr) {
+  if (!img.data) {
     std::cout << "Image load failed: " << pfp << std::endl;
     return;
   }
@@ -50,11 +47,13 @@ static void ApplyPfp(BouncingBall &ball, const std::string &pfp) {
   }
 
   textureCache[pfp] = tex;
-  ball.SetTexture(tex);
+
+  ball.SetTexture(textureCache[pfp]); // 🔥 IMPORTANT
 }
 
 void WebSocketClient::Update(
     std::vector<std::unique_ptr<BouncingBall>> &balls) {
+
   std::lock_guard<std::mutex> lock(queueMutex);
 
   while (!messageQueue.empty()) {
@@ -80,7 +79,7 @@ void WebSocketClient::Update(
         pfp = data["pfp"];
       }
 
-      // find existing ball
+      // 🔍 find existing
       BouncingBall *target = nullptr;
 
       for (auto &b : balls) {
@@ -90,36 +89,33 @@ void WebSocketClient::Update(
         }
       }
 
-      // create new ball if not found
+      // ➕ create if not found
       if (!target) {
         auto newBall = std::make_unique<BouncingBall>();
-        newBall->Init();
 
+        Vector2 spawn = {(float)(rand() % EngineConfig::WindowWidth),
+                         (float)(rand() % EngineConfig::WindowHeight)};
+
+        newBall->Init(spawn);
         newBall->ball.username = user;
         newBall->ball.userId = userId;
-
-        // random spawn
-        newBall->ball.position = {(float)(rand() % GetScreenWidth()),
-                                  (float)(rand() % GetScreenHeight())};
 
         balls.push_back(std::move(newBall));
         target = balls.back().get();
       }
 
-      // always keep username updated
+      // always update name
       target->ball.username = user;
 
-      // apply pfp
+      // apply profile pic
       ApplyPfp(*target, pfp);
 
-      // ---------------- chat ----------------
+      // ---------------- CHAT ----------------
       if (type == "chat") {
         if (!data.contains("message") || !data["message"].is_string())
           continue;
 
         const std::string message = data["message"];
-
-        std::cout << "CHAT: " << user << " -> " << message << std::endl;
 
         if (message == "!speed") {
           target->ball.velocity.x *= 1.5f;
@@ -129,7 +125,8 @@ void WebSocketClient::Update(
         }
       }
 
-      // ---------------- gift ----------------
+      // ---------------- GIFT ----------------
+      
       else if (type == "gift") {
         if (!data.contains("gift") || !data["gift"].is_string())
           continue;
@@ -141,40 +138,7 @@ void WebSocketClient::Update(
           amount = data["amount"];
         }
 
-        std::cout << "GIFT: " << user << " -> " << gift << " x " << amount
-                  << std::endl;
-
-        if (gift == "Rose") {
-          target->ball.velocity.x *= 1.1f * amount;
-          target->ball.velocity.y *= 1.1f * amount;
-          target->ball.color = PINK;
-        } else if (gift == "TikTok") {
-          target->ball.velocity.x += 200.0f * amount;
-          target->ball.velocity.y += 200.0f * amount;
-          target->ball.color = GREEN;
-        } else if (gift == "Galaxy") {
-          target->ball.velocity.x *= 3.0f;
-          target->ball.velocity.y *= 3.0f;
-          target->ball.color = RED;
-        } else {
-          target->ball.velocity.x += 50.0f * amount;
-          target->ball.velocity.y += 50.0f * amount;
-        }
-      }
-
-      // ---------------- join ----------------
-      else if (type == "join") {
-        std::cout << "JOIN: " << user << std::endl;
-      }
-
-      // ---------------- like ----------------
-      else if (type == "like") {
-        int count = 0;
-        if (data.contains("count") && data["count"].is_number_integer()) {
-          count = data["count"];
-        }
-
-        std::cout << "LIKE: " << user << " -> " << count << std::endl;
+       target->ApplyGift(gift, amount);
       }
 
     } catch (const std::exception &e) {

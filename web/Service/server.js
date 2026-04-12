@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
-const TIKTOK_USERNAME = "itscvsper";
+const TIKTOK_USERNAME = "irfanrifki123";
 const PFP_DIR = "./pfp_cache";
 
 if (!fs.existsSync(PFP_DIR)) {

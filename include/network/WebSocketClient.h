@@ -3,8 +3,11 @@
 #include <queue>
 #include <mutex>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include <ixwebsocket/IXWebSocket.h>
+#include "raylib.h"
 
 class BouncingBall;
 
@@ -19,4 +22,8 @@ private:
 
     std::queue<std::string> messageQueue;
     std::mutex queueMutex;
+
+    //std::unordered_map<std::string, std::shared_ptr<Texture2D>> textureCache;
+
+    //void ApplyPfp(BouncingBall &ball, const std::string &pfp);
 };

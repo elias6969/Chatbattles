@@ -22,6 +22,8 @@ public:
   void guishutdown();
 
 private:
+  const int CELL_SIZE = 100;
+  std::unordered_map<int, std::vector<int>> grid;
   std::vector<std::unique_ptr<BouncingBall>> playerballs;
   std::unique_ptr<BouncingBall> player;
   std::unique_ptr<WebSocketClient> wsClient;
