@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include <string>
 #include <vector>
+#include "gamecore/Abilities.h"
 
 struct Particle {
   Vector2 position;
@@ -10,6 +11,7 @@ struct Particle {
   float life;
   float maxLife;
   float size;
+  Color color{255, 200, 50, 255};
 };
 
 struct Ball {
@@ -21,8 +23,9 @@ struct Ball {
   std::string username;
   std::string userId;
 
-  Texture2D pfpTexture{};
-  bool hasPfp = false;
+  //Texture2D pfpTexture{};
+  //bool hasPfp = false;
+  std::string pfpPath;
 
   float health = 100.0f;
   float maxHealth = 100.0f;
@@ -30,13 +33,24 @@ struct Ball {
   float hitTimer = 0.0f;
   bool alive = true;
 
-  // 🎮 GAME STATS
+  // combat attribution (session-only)
+  std::string lastHitByUserId;
+  double lastHitAtSeconds = -1.0;
+
+  // respawn / protection
+  float respawnTimer = 0.0f;
+  float invulnTimer = 0.0f;
+
+  // ability state
+  AbilityState ability;
+
+  // GAME STATS
   float speedMultiplier = 1.0f;
   float damageMultiplier = 1.0f;
   float knockbackMultiplier = 1.0f;
   float shield = 0.0f;
 
-  // ⏱ timers
+  // timers
   float speedTimer = 0.0f;
   float damageTimer = 0.0f;
   float shieldTimer = 0.0f;
@@ -48,9 +62,14 @@ public:
   void Update();
   void Draw();
 
-  void OnCollision(Vector2 point, float strength);
+  // Applies collision damage. Returns damage applied (after shield), \u2265 0.
+  // Caller can check `ball.alive` to see if it resulted in death.
+  float OnCollision(const std::string& attackerUserId,
+                    double nowSeconds,
+                    Vector2 point,
+                    float strength);
 
-  void ApplyGift(const std::string& gift, int amount);
+  void ApplyGift(const std::string& gift, int amount, int diamondCount = 0);
 
   void SetTexture(Texture2D tex);
 
@@ -58,8 +77,6 @@ public:
 
 private:
   std::vector<Particle> particles;
-
-  Font font;
   void SpawnParticles(Vector2 pos, float strength);
   void UpdateParticles();
   void DrawParticles();

@@ -20,37 +20,6 @@ file(GLOB_RECURSE ENGINE_SOURCES
 add_subdirectory(external/raylib)
 
 # --------------------------------------------------
-# rlImGui (ImGui for raylib)
-# --------------------------------------------------
-file(GLOB RLIMGUI_SOURCES
-    external/rlImGui/*.cpp
-)
-
-add_library(rlimgui STATIC ${RLIMGUI_SOURCES})
-
-target_include_directories(rlimgui PUBLIC
-    external/rlImGui
-    external/imgui-docking/imgui
-)
-
-target_link_libraries(rlimgui PUBLIC
-    raylib
-)
-
-# --------------------------------------------------
-# ImGui (Docking)
-# --------------------------------------------------
-file(GLOB IMGUI_SOURCES
-    external/imgui-docking/imgui/*.cpp
-)
-
-add_library(imgui STATIC ${IMGUI_SOURCES})
-
-target_include_directories(imgui PUBLIC
-    external/imgui-docking/imgui
-)
-
-# --------------------------------------------------
 # Executable
 # --------------------------------------------------
 add_executable(RaylibEngine
@@ -85,8 +54,6 @@ target_include_directories(RaylibEngine PRIVATE
 
 target_link_libraries(RaylibEngine PRIVATE
     raylib
-    rlimgui
-    imgui
     ixwebsocket
 )
 
