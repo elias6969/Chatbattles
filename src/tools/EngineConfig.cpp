@@ -29,8 +29,12 @@ int EngineConfig::WindowHeight = 600;
 float EngineConfig::dt = 0.0f;
 
 void EngineConfig::UpdateWindowSize() {
+  // During minimize / some resize paths, raylib can report 0 for a frame.
+  // Clamp to keep any downstream math (e.g. rand() % WindowWidth) safe.
   WindowWidth = GetRenderWidth();
   WindowHeight = GetRenderHeight();
+  if (WindowWidth < 1) WindowWidth = 1;
+  if (WindowHeight < 1) WindowHeight = 1;
 }
 
 void EngineConfig::PollWindowResize() {
